@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d10">
+<title>Peg Scan</title>
+<style>
+  :root { --bg:#0b0d10; --card:#161a20; --line:#2c3442; --text:#f4f6f8; --muted:#9aa3b2; --gold:#e2b340; --silver:#d5dbe3; --green:#3dd68c; --red:#ff6b61; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; }
+  header { padding: calc(8px + env(safe-area-inset-top)) 14px 8px; display:flex; justify-content:space-between; align-items:flex-end; }
+  h1 { margin:0; font-size:18px; } h1 span { color:var(--gold); }
+  .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .count { font-size:13px; color:var(--muted); }
+  .stage { position:relative; margin:0 12px; border-radius:16px; overflow:hidden; background:#000; height:42dvh; }
+  video, #overlay { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  #overlay { pointer-events:none; }
+  .toast { position:absolute; left:10px; right:10px; top:10px; background:rgba(10,12,16,.88); border:1px solid rgba(226,179,64,.45); color:var(--gold); border-radius:12px; padding:8px 10px; font-size:13px; font-weight:700; display:none; }
+  .controls { display:flex; gap:8px; padding:10px 12px; }
+  button { flex:1; border:0; border-radius:999px; background:#222833; color:var(--text); font:inherit; font-size:14px; font-weight:700; padding:11px 10px; }
+  button.primary { background:var(--gold); color:#1a1406; }
+  button:disabled { opacity:.4; }
+  .err { color:#ffb4ae; font-size:13px; padding:0 14px 6px; }
+  #list { padding:0 12px calc(18px + env(safe-area-inset-bottom)); }
+  .item { display:flex; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:8px; margin-bottom:8px; }
+  .item img { width:86px; height:64px; object-fit:cover; border-radius:8px; background:#000; flex:none; }
+  .name { font-weight:750; font-size:14px; }
+  .meta { color:var(--muted); font-size:12px; margin-top:3px; line-height:1.35; }
+  .badge { display:inline-block; margin-top:6px; font-size:10px; font-weight:800; letter-spacing:.04em; border-radius:999px; padding:3px 7px; }
+  .SUPER { background:var(--gold); color:#1a1406; }
+  .TH { background:var(--silver); color:#1a1406; }
+  .RED { background:#ff5a4e; color:#fff; }
+  .NO { background:#2a3140; color:#c9d0da; }
+  .UNK { background:#3a3320; color:var(--gold); }
+  .empty { color:var(--muted); font-size:13px; line-height:1.4; padding:4px 2px 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Peg <span>Scan</span></h1><div class="sub">Each logo is its own card, even in a stack.</div></div>
+  <div class="count" id="count">0 saved</div>
+</header>
+<div id="err" class="err" hidden></div>
+<div class="stage">
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="overlay"></canvas>
+  <div class="toast" id="toast"></div>
+</div>
+<div class="controls">
+  <button class="primary" id="startBtn" type="button">Start camera</button>
+  <button id="torchBtn" type="button" disabled>Light</button>
+  <button id="clearBtn" type="button">Clear</button>
+</div>
+<div id="list"><p class="empty">Point at a peg or a bin. Stacked cards are split by the Hot Wheels logo, and each one is saved on its own. You still check the gold flame.</p></div>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const CATALOG = [
+  ["ferrari f40","Ferrari F40 Competizione","Ferrari","SUPER","63/250 · candy black · gold flame"],
+  ["mustang gtd","Ford Mustang GTD","Factory Fresh","SUPER","43/250 · candy blue"],
+  ["civic custom","Honda Civic Custom","Drag Racers","SUPER","151/250 · candy green"],
+  ["lotus sport elise","Lotus Sport Elise","Compact Kings","SUPER","candy orange"],
+  ["sport elise","Lotus Sport Elise","Compact Kings","SUPER","candy orange"],
+  ["sierra cosworth","'87 Ford Sierra Cosworth","HW Euro","SUPER","candy pink"],
+  ["64 impala","'64 Impala","Layin' Low","SUPER","candy teal"],
+  ["subaru impreza","Subaru Impreza WRX","HW J-Imports","SUPER","candy blue"],
+  ["impreza wrx","Subaru Impreza WRX","HW J-Imports","SUPER","candy blue"],
+  ["94 toyota supra","'94 Toyota Supra","Tooned","SUPER","K case · cartoon Supra · 94 door"],
+  ["tooned supra","'94 Toyota Supra","Tooned","SUPER","K case · check gold flame"],
+  ["porsche 911 carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","M case · brown-gold"],
+  ["carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","M case · brown-gold"],
+  ["ram 1500","'23 Ram 1500","HW Dirt","SUPER","N case · purple · green windows"],
+  ["aar cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","P case · gold · red flames"],
+  ["plymouth cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","P case · gold"],
+  ["firebird 400","'67 Pontiac Firebird 400","Cool Classics","SUPER","Q case · candy blue"],
+  ["drift ender","Drift-Ender","Truckin' Along","SUPER","A case · candy red"],
+  ["drift-ender","Drift-Ender","Truckin' Along","SUPER","A case · candy red"],
+  ["custom otto","Custom Otto","Mattel","SUPER","candy blue"],
+  ["maxima drift","Nissan Maxima Drift Car","Wagons","SUPER","L case"],
+  ["buick regal","'87 Buick Regal GNX","Nightspeed","TH","regular hunt"],
+  ["dodge viper","'92 Dodge Viper RT/10","Drop Tops","TH","regular hunt"],
+  ["electro silhouette","Electro Silhouette","HW EV","TH","regular hunt · 58/250"],
+  ["ford gt race","2016 Ford GT Race","Exoticars","TH","regular hunt"],
+  ["2 jet z","2 Jet Z","HW Dream Garage","TH","regular hunt"],
+  ["sweet driver","Sweet Driver","Sweet Rides","TH","K-case regular hunt"],
+  ["fast fish","Fast Fish","Team Wheels","TH","N-case regular hunt"],
+  ["skyline ht","Nissan Skyline HT 2000GT-X","HW Screen Time","TH","P-case regular hunt"],
+  ["hot wheengs","Hot Wheengs","X-Raycers","TH","regular hunt"],
+  ["cone shaker","Cone Shaker","HW Starting Grid","TH","regular hunt"],
+  ["total disposal","Total Disposal","HW Heavyweights","TH","regular hunt"],
+  ["amaru gtc","Amaru GTC","HW Mods","TH","regular hunt"],
+  ["mad manga","Mad Manga","Hot Wheels Let's Race","TH","regular hunt"],
+  ["model a custom","Ford Model A Custom","Rod Squad","TH","regular hunt"],
+  ["mach-e","Ford Mustang Mach-E 1400","HW EV","NO","Red Edition exists · check for RED on door"],
+  ["mach e","Ford Mustang Mach-E 1400","HW EV","NO","2/10 · not a Super"],
+  ["taycan","Porsche Taycan Turbo S","HW EV","NO","3/10"],
+  ["wattzup","Wattzup","HW EV","NO","4/10"],
+  ["lucid air","Lucid Air","HW EV","NO","6/10"],
+  ["polestar","Polestar TRX","HW EV","NO","7/10"],
+  ["voltage spike","Voltage Spike","HW EV","NO","8/10"],
+  ["honda e","Custom 2020 Honda e","HW EV","NO","9/10 · new casting"],
+  ["celestiq","Cadillac Celestiq","HW EV","NO","10/10 · new casting"],
+  ["solar reflex","Solar Reflex","HW EV","NO","1/10"],
+  ["kia ev6","Custom Kia EV6","HW EV","NO","2025 · 8/10 · not rare"],
+  ["ev6","Custom Kia EV6","HW EV","NO","2025 · not rare"],
+  ["gr supra","'20 Toyota GR Supra","Then and Now","RED","Target Red Edition is the exclusive"],
+  ["mclaren w1","McLaren W1","Exoticars","RED","Target Red Edition exists"],
+  ["porsche 911 turbo cabriolet","Porsche 911 Turbo Cabriolet","HW Roadsters","RED","Target Red Edition"],
+  ["pass'n gasser","Pass'n Gasser","Drag Racers","RED","Target Red Edition"],
+  ["passn gasser","Pass'n Gasser","Drag Racers","RED","Target Red Edition"],
+  ["mazda rx-3","Mazda RX-3","Compact Kings","NO","Red Edition exists at Target"],
+  ["rx-3","Mazda RX-3","Compact Kings","NO","check for Red Edition card"],
+  ["silverado","'83 Chevy Silverado","Truckin' Along","NO","common mainline"],
+  ["batmobile","Batmobile","Batman","NO","common mainline"],
+  ["charger daytona","'69 Dodge Charger Daytona","HW Starting Grid","NO","common mainline"],
+  ["pagani","Pagani Zonda Cinque","Exoticars","NO","common mainline"],
+  ["deora","Deora III","HW EV","NO","2025 · 2/10"],
+  ["cupra","Cupra e-Racer","HW EV","NO","2025 · 4/10"],
+  ["fiat 500e","Fiat 500e","HW EV","NO","2025"],
+  ["model s","Tesla Model S Plaid","HW EV","NO","2025 · 1/10"]
+];
+
+const video = document.getElementById("video");
+const overlay = document.getElementById("overlay");
+const ctx = overlay.getContext("2d");
+const toast = document.getElementById("toast");
+const err = document.getElementById("err");
+const list = document.getElementById("list");
+const count = document.getElementById("count");
+const startBtn = document.getElementById("startBtn");
+const torchBtn = document.getElementById("torchBtn");
+let stream = null, torchOn = false, busy = false, saved = 0;
+const locks = new Map();
+const grab = document.createElement("canvas");
+const gctx = grab.getContext("2d", { willReadFrequently: true });
+const seen = new Map();
+const queue = [];
+
+function norm(s) {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+function matchText(text) {
+  const n = norm(text);
+  let best = null;
+  for (const row of CATALOG) {
+    if (n.includes(row[0])) {
+      if (!best || row[0].length > best[0].length) best = row;
+    }
+  }
+  if (best) return { name: best[1], series: best[2], kind: best[3], note: best[4] };
+  const seriesHit = n.match(/hw ev|factory fresh|tooned|hw dirt|hw euro|exoticars|ferrari|drag racers|then and now|nightspeed|drop tops|batmobile|j-imports|j imports/);
+  return { name: "Unread card", series: seriesHit ? seriesHit[0].toUpperCase() : "Unknown collection", kind: "UNK", note: "Name not read. Check the flame yourself." };
+}
+function showError(msg) { err.hidden = false; err.textContent = msg; }
+function say(msg, ms) {
+  toast.style.display = "block";
+  toast.textContent = msg;
+  clearTimeout(say._t);
+  say._t = setTimeout(() => { toast.style.display = "none"; }, ms || 2200);
+}
+async function startCamera() {
+  err.hidden = true;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1080 } } });
+    video.srcObject = stream;
+    await video.play();
+    startBtn.disabled = true;
+    const caps = stream.getVideoTracks()[0].getCapabilities?.();
+    torchBtn.disabled = !(caps && caps.torch);
+    say("Camera on. Stacks are split by each logo.");
+    requestAnimationFrame(loop);
+  } catch (e) {
+    showError("Open this in Safari and allow Camera.");
+  }
+}
+async function toggleTorch() {
+  torchOn = !torchOn;
+  try { await stream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch: torchOn }] }); torchBtn.textContent = torchOn ? "Light on" : "Light"; }
+  catch (e) { torchOn = false; showError("Light not available."); }
+}
+function loop() {
+  if (video.videoWidth) detect();
+  requestAnimationFrame(loop);
+}
+function detect() {
+  const w = video.videoWidth, h = video.videoHeight;
+  overlay.width = overlay.clientWidth; overlay.height = overlay.clientHeight;
+  grab.width = 140; grab.height = Math.max(1, Math.round(140 * h / w));
+  gctx.drawImage(video, 0, 0, grab.width, grab.height);
+  const data = gctx.getImageData(0, 0, grab.width, grab.height).data;
+  const seeds = [];
+  const step = 4;
+  for (let y = 2; y < grab.height - 2; y += step) {
+    for (let x = 2; x < grab.width - 2; x += step) {
+      const i = (y * grab.width + x) * 4;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const yellow = r > 170 && g > 120 && b < 110;
+      const red = r > 160 && g < 90 && b < 90;
+      if (!yellow && !red) continue;
+      let blue = 0;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const j = ((y + dy) * grab.width + (x + dx)) * 4;
+        if (data[j+2] > 110 && data[j+2] > data[j] + 20 && data[j+2] > data[j+1]) blue++;
+      }
+      if (blue > 4) seeds.push([x, y]);
+    }
+  }
+  const logos = [];
+  seeds.forEach(([x, y]) => {
+    let blob = logos.find(b => Math.abs(b.x - x) < 18 && Math.abs(b.y - y) < 14);
+    if (!blob) { blob = { x, y, n: 0, sx: 0, sy: 0 }; logos.push(blob); }
+    blob.n++; blob.sx += x; blob.sy += y;
+  });
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  ctx.strokeStyle = "#e2b340"; ctx.lineWidth = 3; ctx.font = "12px -apple-system"; ctx.fillStyle = "#e2b340";
+  const now = performance.now();
+  const live = new Set();
+  logos.filter(b => b.n >= 2).forEach((b, idx) => {
+    const lx = b.sx / b.n, ly = b.sy / b.n;
+    const cardW = grab.width * 0.34, cardH = cardW * 1.35;
+    const x0 = Math.max(0, lx - cardW / 2), y0 = Math.max(0, ly - cardH * 0.22);
+    const key = Math.round(lx / 16) + ":" + Math.round(ly / 16);
+    live.add(key);
+    const sx = x0 / grab.width * overlay.width, sy = y0 / grab.height * overlay.height;
+    const sw = cardW / grab.width * overlay.width, sh = cardH / grab.height * overlay.height;
+    ctx.strokeRect(sx, sy, sw, sh);
+    ctx.fillText(String(idx + 1), sx + 6, sy + 16);
+    if (!locks.has(key)) locks.set(key, now);
+    if (now - locks.get(key) > 600 && now - (seen.get(key) || 0) > 5000) {
+      seen.set(key, now);
+      queue.push({ x: x0 / grab.width, y: y0 / grab.height, w: cardW / grab.width, h: cardH / grab.height, key });
+    }
+  });
+  for (const key of locks.keys()) if (!live.has(key)) locks.delete(key);
+  if (!busy && queue.length) capture(queue.shift());
+}
+async function capture(box) {
+  busy = true;
+  say(queue.length ? "Reading a card, " + queue.length + " waiting…" : "Reading this card…");
+  const snap = document.createElement("canvas");
+  const sw = video.videoWidth, sh = video.videoHeight;
+  const pad = 8;
+  const x = Math.max(0, Math.floor(box.x * sw) - pad);
+  const y = Math.max(0, Math.floor(box.y * sh) - pad);
+  const w = Math.min(sw - x, Math.floor(box.w * sw) + pad * 2);
+  const h = Math.min(sh - y, Math.floor(box.h * sh) + pad * 2);
+  snap.width = Math.max(1, w); snap.height = Math.max(1, h);
+  snap.getContext("2d").drawImage(video, x, y, w, h, 0, 0, w, h);
+  const url = snap.toDataURL("image/jpeg", 0.85);
+  let text = "";
+  try {
+    if (window.Tesseract) {
+      const r = await Tesseract.recognize(url, "eng");
+      text = r.data.text || "";
+    }
+  } catch (e) { text = ""; }
+  const hit = matchText(text);
+  addItem(url, hit);
+  if (hit.kind === "SUPER" || hit.kind === "TH" || hit.kind === "RED") {
+    say(hit.kind + ": " + hit.name, 2800);
+    navigator.vibrate?.([80, 40, 80]);
+  } else say(hit.name + " · " + hit.series, 1400);
+  busy = false;
+}
+function addItem(url, hit, raw) {
+  if (list.querySelector(".empty")) list.innerHTML = "";
+  saved++;
+  count.textContent = saved + " saved";
+  const el = document.createElement("div");
+  el.className = "item";
+  const label = hit.kind === "SUPER" ? "SUPER" : hit.kind === "TH" ? "TREASURE HUNT" : hit.kind === "RED" ? "RED EDITION" : hit.kind === "UNK" ? "CHECK CARD" : "NOT RARE";
+  el.innerHTML = `<img alt="" src="${url}"><div><div class="name">${hit.name}</div><div class="meta">${hit.series}<br>${hit.note}</div><div class="badge ${hit.kind}">${label}</div></div>`;
+  list.prepend(el);
+}
+startBtn.addEventListener("click", startCamera);
+torchBtn.addEventListener("click", toggleTorch);
+document.getElementById("clearBtn").addEventListener("click", () => {
+  saved = 0; seen.clear(); count.textContent = "0 saved";
+  list.innerHTML = '<p class="empty">List cleared. Point at the peg again.</p>';
+});
+</script>
+</body>
+</html>
