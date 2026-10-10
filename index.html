@@ -17,10 +17,15 @@
   .stage { position:relative; margin:0 12px; border-radius:16px; overflow:hidden; background:#000; height:42dvh; }
   video, #overlay { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   #overlay { pointer-events:none; }
+  .crosshair { position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+  .crosshair::before, .crosshair::after { content:""; position:absolute; background:rgba(226,179,64,.6); }
+  .crosshair::before { width:2px; height:40px; }
+  .crosshair::after { width:40px; height:2px; }
   .toast { position:absolute; left:10px; right:10px; top:10px; background:rgba(10,12,16,.88); border:1px solid rgba(226,179,64,.45); color:var(--gold); border-radius:12px; padding:8px 10px; font-size:13px; font-weight:700; display:none; }
   .controls { display:flex; gap:8px; padding:10px 12px; }
   button { flex:1; border:0; border-radius:999px; background:#222833; color:var(--text); font:inherit; font-size:14px; font-weight:700; padding:11px 10px; }
   button.primary { background:var(--gold); color:#1a1406; }
+  button.capture { background:var(--green); color:#06200f; flex:2; font-size:16px; }
   button:disabled { opacity:.4; }
   .err { color:#ffb4ae; font-size:13px; padding:0 14px 6px; }
   #list { padding:0 12px calc(18px + env(safe-area-inset-bottom)); }
@@ -39,21 +44,23 @@
 </head>
 <body>
 <header>
-  <div><h1>Peg <span>Scan</span></h1><div class="sub">Each logo is its own card, even in a stack.</div></div>
+  <div><h1>Peg <span>Scan</span></h1><div class="sub">Tap Capture. Photo saves instantly. Check the flame yourself.</div></div>
   <div class="count" id="count">0 saved</div>
 </header>
 <div id="err" class="err" hidden></div>
 <div class="stage">
   <video id="video" playsinline muted autoplay></video>
   <canvas id="overlay"></canvas>
+  <div class="crosshair"></div>
   <div class="toast" id="toast"></div>
 </div>
 <div class="controls">
   <button class="primary" id="startBtn" type="button">Start camera</button>
+  <button class="capture" id="captureBtn" type="button" disabled>Capture</button>
   <button id="torchBtn" type="button" disabled>Light</button>
   <button id="clearBtn" type="button">Clear</button>
 </div>
-<div id="list"><p class="empty">Point at a peg or a bin. Stacked cards are split by the Hot Wheels logo, and each one is saved on its own. You still check the gold flame.</p></div>
+<div id="list"><p class="empty">Point at a card or a sliver on the peg and tap Capture. The photo is saved right away. Name and rarity fill in if readable. You still confirm the gold flame.</p></div>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const CATALOG = [
@@ -129,13 +136,9 @@ const err = document.getElementById("err");
 const list = document.getElementById("list");
 const count = document.getElementById("count");
 const startBtn = document.getElementById("startBtn");
+const captureBtn = document.getElementById("captureBtn");
 const torchBtn = document.getElementById("torchBtn");
 let stream = null, torchOn = false, busy = false, saved = 0;
-const locks = new Map();
-const grab = document.createElement("canvas");
-const gctx = grab.getContext("2d", { willReadFrequently: true });
-const seen = new Map();
-const queue = [];
 
 function norm(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
@@ -166,10 +169,10 @@ async function startCamera() {
     video.srcObject = stream;
     await video.play();
     startBtn.disabled = true;
+    captureBtn.disabled = false;
     const caps = stream.getVideoTracks()[0].getCapabilities?.();
     torchBtn.disabled = !(caps && caps.torch);
-    say("Camera on. Stacks are split by each logo.");
-    requestAnimationFrame(loop);
+    say("Camera on. Aim and tap Capture.");
   } catch (e) {
     showError("Open this in Safari and allow Camera.");
   }
@@ -179,91 +182,48 @@ async function toggleTorch() {
   try { await stream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch: torchOn }] }); torchBtn.textContent = torchOn ? "Light on" : "Light"; }
   catch (e) { torchOn = false; showError("Light not available."); }
 }
-function loop() {
-  if (video.videoWidth) detect();
-  requestAnimationFrame(loop);
-}
-function detect() {
-  const w = video.videoWidth, h = video.videoHeight;
-  overlay.width = overlay.clientWidth; overlay.height = overlay.clientHeight;
-  grab.width = 140; grab.height = Math.max(1, Math.round(140 * h / w));
-  gctx.drawImage(video, 0, 0, grab.width, grab.height);
-  const data = gctx.getImageData(0, 0, grab.width, grab.height).data;
-  const seeds = [];
-  const step = 4;
-  for (let y = 2; y < grab.height - 2; y += step) {
-    for (let x = 2; x < grab.width - 2; x += step) {
-      const i = (y * grab.width + x) * 4;
-      const r = data[i], g = data[i+1], b = data[i+2];
-      const yellow = r > 170 && g > 120 && b < 110;
-      const red = r > 160 && g < 90 && b < 90;
-      if (!yellow && !red) continue;
-      let blue = 0;
-      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-        const j = ((y + dy) * grab.width + (x + dx)) * 4;
-        if (data[j+2] > 110 && data[j+2] > data[j] + 20 && data[j+2] > data[j+1]) blue++;
-      }
-      if (blue > 4) seeds.push([x, y]);
-    }
-  }
-  const logos = [];
-  seeds.forEach(([x, y]) => {
-    let blob = logos.find(b => Math.abs(b.x - x) < 18 && Math.abs(b.y - y) < 14);
-    if (!blob) { blob = { x, y, n: 0, sx: 0, sy: 0 }; logos.push(blob); }
-    blob.n++; blob.sx += x; blob.sy += y;
-  });
-  ctx.clearRect(0, 0, overlay.width, overlay.height);
-  ctx.strokeStyle = "#e2b340"; ctx.lineWidth = 3; ctx.font = "12px -apple-system"; ctx.fillStyle = "#e2b340";
-  const now = performance.now();
-  const live = new Set();
-  logos.filter(b => b.n >= 2).forEach((b, idx) => {
-    const lx = b.sx / b.n, ly = b.sy / b.n;
-    const cardW = grab.width * 0.34, cardH = cardW * 1.35;
-    const x0 = Math.max(0, lx - cardW / 2), y0 = Math.max(0, ly - cardH * 0.22);
-    const key = Math.round(lx / 16) + ":" + Math.round(ly / 16);
-    live.add(key);
-    const sx = x0 / grab.width * overlay.width, sy = y0 / grab.height * overlay.height;
-    const sw = cardW / grab.width * overlay.width, sh = cardH / grab.height * overlay.height;
-    ctx.strokeRect(sx, sy, sw, sh);
-    ctx.fillText(String(idx + 1), sx + 6, sy + 16);
-    if (!locks.has(key)) locks.set(key, now);
-    if (now - locks.get(key) > 600 && now - (seen.get(key) || 0) > 5000) {
-      seen.set(key, now);
-      queue.push({ x: x0 / grab.width, y: y0 / grab.height, w: cardW / grab.width, h: cardH / grab.height, key });
-    }
-  });
-  for (const key of locks.keys()) if (!live.has(key)) locks.delete(key);
-  if (!busy && queue.length) capture(queue.shift());
-}
-async function capture(box) {
-  busy = true;
-  say(queue.length ? "Reading a card, " + queue.length + " waiting…" : "Reading this card…");
-  const snap = document.createElement("canvas");
+function captureCenter() {
+  if (!video.videoWidth) return;
   const sw = video.videoWidth, sh = video.videoHeight;
-  const pad = 8;
-  const x = Math.max(0, Math.floor(box.x * sw) - pad);
-  const y = Math.max(0, Math.floor(box.y * sh) - pad);
-  const w = Math.min(sw - x, Math.floor(box.w * sw) + pad * 2);
-  const h = Math.min(sh - y, Math.floor(box.h * sh) + pad * 2);
-  snap.width = Math.max(1, w); snap.height = Math.max(1, h);
-  snap.getContext("2d").drawImage(video, x, y, w, h, 0, 0, w, h);
-  const url = snap.toDataURL("image/jpeg", 0.85);
-  let text = "";
-  try {
-    if (window.Tesseract) {
-      const r = await Tesseract.recognize(url, "eng");
-      text = r.data.text || "";
+  // Center crop: roughly a card-sized region in the middle
+  const cropW = Math.min(sw * 0.55, sh * 0.7);
+  const cropH = cropW * 1.4;
+  const x = Math.max(0, (sw - cropW) / 2);
+  const y = Math.max(0, (sh - cropH) / 2);
+  const snap = document.createElement("canvas");
+  snap.width = Math.max(1, Math.floor(cropW));
+  snap.height = Math.max(1, Math.floor(cropH));
+  snap.getContext("2d").drawImage(video, x, y, cropW, cropH, 0, 0, snap.width, snap.height);
+  const url = snap.toDataURL("image/jpeg", 0.88);
+  // Save immediately with placeholder
+  const placeholder = { name: "Captured card", series: "Reading…", kind: "UNK", note: "Photo saved. Checking name." };
+  const el = addItem(url, placeholder);
+  say("Saved. Reading name…");
+  // Async OCR
+  (async () => {
+    let text = "";
+    try {
+      if (window.Tesseract) {
+        const r = await Tesseract.recognize(url, "eng");
+        text = r.data.text || "";
+      }
+    } catch (e) { text = ""; }
+    const hit = matchText(text);
+    // Update the item in place
+    if (el) {
+      el.querySelector(".name").textContent = hit.name;
+      el.querySelector(".meta").innerHTML = hit.series + "<br>" + hit.note;
+      const badge = el.querySelector(".badge");
+      badge.className = "badge " + hit.kind;
+      badge.textContent = hit.kind === "SUPER" ? "SUPER" : hit.kind === "TH" ? "TREASURE HUNT" : hit.kind === "RED" ? "RED EDITION" : hit.kind === "UNK" ? "CHECK CARD" : "NOT RARE";
+      if (hit.kind === "SUPER" || hit.kind === "TH" || hit.kind === "RED") {
+        say(hit.kind + ": " + hit.name, 2800);
+        navigator.vibrate?.([80, 40, 80]);
+      }
     }
-  } catch (e) { text = ""; }
-  const hit = matchText(text);
-  addItem(url, hit);
-  if (hit.kind === "SUPER" || hit.kind === "TH" || hit.kind === "RED") {
-    say(hit.kind + ": " + hit.name, 2800);
-    navigator.vibrate?.([80, 40, 80]);
-  } else say(hit.name + " · " + hit.series, 1400);
-  busy = false;
+  })();
 }
-function addItem(url, hit, raw) {
+function addItem(url, hit) {
   if (list.querySelector(".empty")) list.innerHTML = "";
   saved++;
   count.textContent = saved + " saved";
@@ -272,12 +232,14 @@ function addItem(url, hit, raw) {
   const label = hit.kind === "SUPER" ? "SUPER" : hit.kind === "TH" ? "TREASURE HUNT" : hit.kind === "RED" ? "RED EDITION" : hit.kind === "UNK" ? "CHECK CARD" : "NOT RARE";
   el.innerHTML = `<img alt="" src="${url}"><div><div class="name">${hit.name}</div><div class="meta">${hit.series}<br>${hit.note}</div><div class="badge ${hit.kind}">${label}</div></div>`;
   list.prepend(el);
+  return el;
 }
 startBtn.addEventListener("click", startCamera);
+captureBtn.addEventListener("click", captureCenter);
 torchBtn.addEventListener("click", toggleTorch);
 document.getElementById("clearBtn").addEventListener("click", () => {
-  saved = 0; seen.clear(); count.textContent = "0 saved";
-  list.innerHTML = '<p class="empty">List cleared. Point at the peg again.</p>';
+  saved = 0; count.textContent = "0 saved";
+  list.innerHTML = '<p class="empty">List cleared. Aim and tap Capture.</p>';
 });
 </script>
 </body>
