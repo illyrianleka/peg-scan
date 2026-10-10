@@ -64,68 +64,72 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const CATALOG = [
-  ["ferrari f40","Ferrari F40 Competizione","Ferrari","SUPER","63/250 · candy black · gold flame"],
-  ["mustang gtd","Ford Mustang GTD","Factory Fresh","SUPER","43/250 · candy blue"],
-  ["civic custom","Honda Civic Custom","Drag Racers","SUPER","151/250 · candy green"],
-  ["lotus sport elise","Lotus Sport Elise","Compact Kings","SUPER","candy orange"],
-  ["sport elise","Lotus Sport Elise","Compact Kings","SUPER","candy orange"],
-  ["sierra cosworth","'87 Ford Sierra Cosworth","HW Euro","SUPER","candy pink"],
-  ["64 impala","'64 Impala","Layin' Low","SUPER","candy teal"],
-  ["subaru impreza","Subaru Impreza WRX","HW J-Imports","SUPER","candy blue"],
-  ["impreza wrx","Subaru Impreza WRX","HW J-Imports","SUPER","candy blue"],
-  ["94 toyota supra","'94 Toyota Supra","Tooned","SUPER","K case · cartoon Supra · 94 door"],
-  ["tooned supra","'94 Toyota Supra","Tooned","SUPER","K case · check gold flame"],
-  ["porsche 911 carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","M case · brown-gold"],
-  ["carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","M case · brown-gold"],
-  ["ram 1500","'23 Ram 1500","HW Dirt","SUPER","N case · purple · green windows"],
-  ["aar cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","P case · gold · red flames"],
-  ["plymouth cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","P case · gold"],
-  ["firebird 400","'67 Pontiac Firebird 400","Cool Classics","SUPER","Q case · candy blue"],
-  ["drift ender","Drift-Ender","Truckin' Along","SUPER","A case · candy red"],
-  ["drift-ender","Drift-Ender","Truckin' Along","SUPER","A case · candy red"],
-  ["custom otto","Custom Otto","Mattel","SUPER","candy blue"],
-  ["maxima drift","Nissan Maxima Drift Car","Wagons","SUPER","L case"],
-  ["buick regal","'87 Buick Regal GNX","Nightspeed","TH","regular hunt"],
-  ["dodge viper","'92 Dodge Viper RT/10","Drop Tops","TH","regular hunt"],
-  ["electro silhouette","Electro Silhouette","HW EV","TH","regular hunt · 58/250"],
-  ["ford gt race","2016 Ford GT Race","Exoticars","TH","regular hunt"],
-  ["2 jet z","2 Jet Z","HW Dream Garage","TH","regular hunt"],
-  ["sweet driver","Sweet Driver","Sweet Rides","TH","K-case regular hunt"],
-  ["fast fish","Fast Fish","Team Wheels","TH","N-case regular hunt"],
-  ["skyline ht","Nissan Skyline HT 2000GT-X","HW Screen Time","TH","P-case regular hunt"],
-  ["hot wheengs","Hot Wheengs","X-Raycers","TH","regular hunt"],
-  ["cone shaker","Cone Shaker","HW Starting Grid","TH","regular hunt"],
-  ["total disposal","Total Disposal","HW Heavyweights","TH","regular hunt"],
-  ["amaru gtc","Amaru GTC","HW Mods","TH","regular hunt"],
-  ["mad manga","Mad Manga","Hot Wheels Let's Race","TH","regular hunt"],
-  ["model a custom","Ford Model A Custom","Rod Squad","TH","regular hunt"],
-  ["mach-e","Ford Mustang Mach-E 1400","HW EV","NO","Red Edition exists · check for RED on door"],
-  ["mach e","Ford Mustang Mach-E 1400","HW EV","NO","2/10 · not a Super"],
-  ["taycan","Porsche Taycan Turbo S","HW EV","NO","3/10"],
-  ["wattzup","Wattzup","HW EV","NO","4/10"],
-  ["lucid air","Lucid Air","HW EV","NO","6/10"],
-  ["polestar","Polestar TRX","HW EV","NO","7/10"],
-  ["voltage spike","Voltage Spike","HW EV","NO","8/10"],
-  ["honda e","Custom 2020 Honda e","HW EV","NO","9/10 · new casting"],
-  ["celestiq","Cadillac Celestiq","HW EV","NO","10/10 · new casting"],
-  ["solar reflex","Solar Reflex","HW EV","NO","1/10"],
-  ["kia ev6","Custom Kia EV6","HW EV","NO","2025 · 8/10 · not rare"],
+  // 2026 Supers
+  ["ferrari f40","Ferrari F40 Competizione","Ferrari","SUPER","2026 · 63/250 · candy black"],
+  ["mustang gtd","Ford Mustang GTD","Factory Fresh","SUPER","2026 · 43/250 · candy blue"],
+  ["civic custom","Honda Civic Custom","Drag Racers","SUPER","2026 · 151/250 · candy green"],
+  ["lotus sport elise","Lotus Sport Elise","Compact Kings","SUPER","2026 · candy orange"],
+  ["sport elise","Lotus Sport Elise","Compact Kings","SUPER","2026 · candy orange"],
+  ["sierra cosworth","'87 Ford Sierra Cosworth","HW Euro","SUPER","2026 · candy pink"],
+  ["64 impala","'64 Impala","Layin' Low","SUPER","2026 · candy teal"],
+  ["subaru impreza","Subaru Impreza WRX","HW J-Imports","SUPER","2026 · candy blue"],
+  ["impreza wrx","Subaru Impreza WRX","HW J-Imports","SUPER","2026 · candy blue"],
+  ["94 toyota supra","'94 Toyota Supra","Tooned","SUPER","2026 · K case · cartoon"],
+  ["tooned supra","'94 Toyota Supra","Tooned","SUPER","2026 · check gold flame"],
+  ["porsche 911 carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","2026 · M case"],
+  ["carrera rs","Porsche 911 Carrera RS 2.7","Then and Now","SUPER","2026"],
+  ["ram 1500","'23 Ram 1500","HW Dirt","SUPER","2026 · N case · purple"],
+  ["aar cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","2026 · P case · gold"],
+  ["plymouth cuda","'70 Plymouth AAR Cuda","HW Torque","SUPER","2026"],
+  ["firebird 400","'67 Pontiac Firebird 400","Cool Classics","SUPER","2026 · Q case · candy blue"],
+  ["drift ender","Drift-Ender","Truckin' Along","SUPER","2026 · A case · candy red"],
+  ["drift-ender","Drift-Ender","Truckin' Along","SUPER","2026"],
+  ["custom otto","Custom Otto","Mattel","SUPER","2026 · candy blue"],
+  ["maxima drift","Nissan Maxima Drift Car","Wagons","SUPER","2026"],
+  // 2026 THs
+  ["buick regal","'87 Buick Regal GNX","Nightspeed","TH","2026 · regular hunt"],
+  ["dodge viper","'92 Dodge Viper RT/10","Drop Tops","TH","2026 · regular hunt"],
+  ["electro silhouette","Electro Silhouette","HW EV","TH","2026 · 58/250"],
+  ["ford gt race","2016 Ford GT Race","Exoticars","TH","2026"],
+  ["2 jet z","2 Jet Z","HW Dream Garage","TH","2026"],
+  ["sweet driver","Sweet Driver","Sweet Rides","TH","2026"],
+  ["fast fish","Fast Fish","Team Wheels","TH","2026"],
+  ["skyline ht","Nissan Skyline HT 2000GT-X","HW Screen Time","TH","2026"],
+  ["hot wheengs","Hot Wheengs","X-Raycers","TH","2026"],
+  ["cone shaker","Cone Shaker","HW Starting Grid","TH","2026"],
+  ["total disposal","Total Disposal","HW Heavyweights","TH","2026"],
+  ["amaru gtc","Amaru GTC","HW Mods","TH","2026"],
+  ["mad manga","Mad Manga","Hot Wheels Let's Race","TH","2026"],
+  ["model a custom","Ford Model A Custom","Rod Squad","TH","2026"],
+  // 2026 HW EV and commons
+  ["mach-e","Ford Mustang Mach-E 1400","HW EV","NO","2026 · 2/10"],
+  ["mach e","Ford Mustang Mach-E 1400","HW EV","NO","2026"],
+  ["taycan","Porsche Taycan Turbo S","HW EV","NO","2026 · 3/10"],
+  ["wattzup","Wattzup","HW EV","NO","2026 · 4/10"],
+  ["lucid air","Lucid Air","HW EV","NO","2026 · 6/10"],
+  ["polestar","Polestar TRX","HW EV","NO","2026 · 7/10"],
+  ["voltage spike","Voltage Spike","HW EV","NO","2026 · 8/10"],
+  ["honda e","Custom 2020 Honda e","HW EV","NO","2026 · 9/10"],
+  ["celestiq","Cadillac Celestiq","HW EV","NO","2026 · 10/10"],
+  ["solar reflex","Solar Reflex","HW EV","NO","2026 · 1/10"],
+  ["kia ev6","Custom Kia EV6","HW EV","NO","2025 · 8/10 · pearl teal"],
   ["ev6","Custom Kia EV6","HW EV","NO","2025 · not rare"],
-  ["gr supra","'20 Toyota GR Supra","Then and Now","RED","Target Red Edition is the exclusive"],
-  ["mclaren w1","McLaren W1","Exoticars","RED","Target Red Edition exists"],
-  ["porsche 911 turbo cabriolet","Porsche 911 Turbo Cabriolet","HW Roadsters","RED","Target Red Edition"],
-  ["pass'n gasser","Pass'n Gasser","Drag Racers","RED","Target Red Edition"],
-  ["passn gasser","Pass'n Gasser","Drag Racers","RED","Target Red Edition"],
-  ["mazda rx-3","Mazda RX-3","Compact Kings","NO","Red Edition exists at Target"],
-  ["rx-3","Mazda RX-3","Compact Kings","NO","check for Red Edition card"],
-  ["silverado","'83 Chevy Silverado","Truckin' Along","NO","common mainline"],
-  ["batmobile","Batmobile","Batman","NO","common mainline"],
-  ["charger daytona","'69 Dodge Charger Daytona","HW Starting Grid","NO","common mainline"],
-  ["pagani","Pagani Zonda Cinque","Exoticars","NO","common mainline"],
-  ["deora","Deora III","HW EV","NO","2025 · 2/10"],
-  ["cupra","Cupra e-Racer","HW EV","NO","2025 · 4/10"],
-  ["fiat 500e","Fiat 500e","HW EV","NO","2025"],
-  ["model s","Tesla Model S Plaid","HW EV","NO","2025 · 1/10"]
+  ["pagani zonda","Pagani Zonda Cinque","Exoticars","NO","2026 · 4/10"],
+  ["pagani","Pagani Zonda Cinque","Exoticars","NO","2026"],
+  ["mazda rx-3","Mazda RX-3","Compact Kings","NO","2026 · Red Edition possible"],
+  ["rx-3","Mazda RX-3","Compact Kings","NO","2026"],
+  ["purple passion","Purple Passion","HW Fan Driven","NO","2026"],
+  ["batmobile","Batmobile","Batman","NO","2026"],
+  ["mclaren w1","McLaren W1","Exoticars","RED","2026 · Target Red possible"],
+  // 2025 examples
+  ["deora iii","Deora III","HW EV","NO","2025 · 2/10"],
+  ["cupra e-racer","Cupra e-Racer","HW EV","NO","2025 · 4/10"],
+  ["fiat 500e","Fiat 500e","HW EV","NO","2025 · 3/10"],
+  ["model s plaid","Tesla Model S Plaid","HW EV","NO","2025 · 1/10"],
+  ["morgan super 3","Morgan Super 3","Factory Fresh","NO","2025"],
+  ["mazda mx-5","Mazda MX-5 Miata","HW Dream Garage","NO","2025"],
+  ["audi quattro","'87 Audi quattro","Factory Fresh","NO","2025 · STH exists"],
+  ["ferrari sf90","Ferrari SF90 Stradale","Factory Fresh","NO","2025"]
 ];
 
 const video = document.getElementById("video");
@@ -152,8 +156,30 @@ function matchText(text) {
     }
   }
   if (best) return { name: best[1], series: best[2], kind: best[3], note: best[4] };
-  const seriesHit = n.match(/hw ev|factory fresh|tooned|hw dirt|hw euro|exoticars|ferrari|drag racers|then and now|nightspeed|drop tops|batmobile|j-imports|j imports/);
+
+  // Multi-trait for EV6 and Supers
+  if ((n.includes("hw ev") || n.includes("ev")) && (n.includes("8/10") || n.includes("120/250") || n.includes("2025") || n.includes("ev6"))) {
+    return { name: "Custom Kia EV6", series: "HW EV", kind: "NO", note: "2025 · 8/10 · pearl teal · not rare" };
+  }
+  if (n.includes("super") || n.includes("treasure hunt") || n.includes("gold flame")) {
+    return { name: "Possible Super / TH", series: "Check card", kind: "SUPER", note: "Possible rare · tilt for gold flame" };
+  }
+
+  const seriesHit = n.match(/hw ev|factory fresh|tooned|hw dirt|hw euro|exoticars|ferrari|drag racers|then and now|nightspeed|drop tops|batmobile|j-imports|j imports|compact kings/);
   return { name: "Unread card", series: seriesHit ? seriesHit[0].toUpperCase() : "Unknown collection", kind: "UNK", note: "Name not read. Check the flame yourself." };
+}
+function isTealHeavy(canvas) {
+  try {
+    const c = canvas.getContext("2d");
+    const data = c.getImageData(0, 0, canvas.width, canvas.height).data;
+    let teal = 0, total = 0;
+    for (let i = 0; i < data.length; i += 12) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      if (g > r + 15 && g > b - 10 && g > 70 && r < 140 && b < 160) teal++;
+      total++;
+    }
+    return total > 0 && (teal / total) > 0.08;
+  } catch(e) { return false; }
 }
 function showError(msg) { err.hidden = false; err.textContent = msg; }
 function say(msg, ms) {
@@ -185,21 +211,18 @@ async function toggleTorch() {
 function captureCenter() {
   if (!video.videoWidth) return;
   const sw = video.videoWidth, sh = video.videoHeight;
-  // Center crop: roughly a card-sized region in the middle
-  const cropW = Math.min(sw * 0.55, sh * 0.7);
-  const cropH = cropW * 1.4;
+  const cropW = Math.min(sw * 0.62, sh * 0.75);
+  const cropH = cropW * 1.35;
   const x = Math.max(0, (sw - cropW) / 2);
-  const y = Math.max(0, (sh - cropH) / 2);
+  const y = Math.max(0, (sh - cropH) / 2 - cropH * 0.05);
   const snap = document.createElement("canvas");
   snap.width = Math.max(1, Math.floor(cropW));
   snap.height = Math.max(1, Math.floor(cropH));
   snap.getContext("2d").drawImage(video, x, y, cropW, cropH, 0, 0, snap.width, snap.height);
   const url = snap.toDataURL("image/jpeg", 0.88);
-  // Save immediately with placeholder
   const placeholder = { name: "Captured card", series: "Reading…", kind: "UNK", note: "Photo saved. Checking name." };
   const el = addItem(url, placeholder);
   say("Saved. Reading name…");
-  // Async OCR
   (async () => {
     let text = "";
     try {
@@ -208,8 +231,10 @@ function captureCenter() {
         text = r.data.text || "";
       }
     } catch (e) { text = ""; }
-    const hit = matchText(text);
-    // Update the item in place
+    let hit = matchText(text);
+    if (hit.kind === "UNK" && isTealHeavy(snap)) {
+      hit = { name: "Custom Kia EV6", series: "HW EV", kind: "NO", note: "Pearl teal · likely 2025 8/10 · not rare" };
+    }
     if (el) {
       el.querySelector(".name").textContent = hit.name;
       el.querySelector(".meta").innerHTML = hit.series + "<br>" + hit.note;
@@ -219,6 +244,8 @@ function captureCenter() {
       if (hit.kind === "SUPER" || hit.kind === "TH" || hit.kind === "RED") {
         say(hit.kind + ": " + hit.name, 2800);
         navigator.vibrate?.([80, 40, 80]);
+      } else if (hit.name.includes("EV6")) {
+        say("EV6 · not rare", 2000);
       }
     }
   })();
